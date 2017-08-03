@@ -6,7 +6,7 @@ author: Jacob Kosberg
 """
 
 import argparse
-import camera
+import Amscope
 import os
 import time
 from datetime import datetime
@@ -20,7 +20,7 @@ def main():
 def getCams(numCams):
     cams = []
     for i in range(numCams):
-        cam = camera.ToupCamCamera(camIndex=i)
+        cam = Amscope.ToupCamCamera(camIndex=i)
         if cam.open():
             cams.append(cam)
         else:
