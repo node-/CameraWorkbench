@@ -17,7 +17,7 @@ import sys
 
 
 class MainWindow(QtGui.QMainWindow):
-    def __init__(self, camera, worker):
+    def __init__(self, worker):
         QtGui.QMainWindow.__init__(self)
         self.ui = uic.loadUi('ui/main.ui', self)
         self.setWindowTitle("Camera Workbench")
@@ -30,7 +30,7 @@ class MainWindow(QtGui.QMainWindow):
         worker.interval = self.intervalSpinBox.value()
         worker.intervalEnabled = self.intervalEnabled.isChecked()
 
-        self.settingsWindow = CameraSettings(camera)
+        self.settingsWindow = CameraSettings(worker)
         self.worker.setImagesPath(str(self.capturePath.text()))
 
         # Camera Settings
@@ -57,10 +57,10 @@ class MainWindow(QtGui.QMainWindow):
 
 
 class CameraSettings(QtGui.QWidget):
-    def __init__(self, camera):
+    def __init__(self, worker):
         QtGui.QWidget.__init__(self)
         self.ui = uic.loadUi('ui/parameters.ui', self)
-        self.camera = camera
+        self.worker = worker
 
         self.setFixedSize(self.size())
 
@@ -87,17 +87,17 @@ class CameraSettings(QtGui.QWidget):
         setFunction()
 
     def setBrightness(self):
-        self.camera.set(cv2.CAP_PROP_BRIGHTNESS, self.brightnessSpinBox.value())
+        self.worker.camera.capture.set(cv2.CAP_PROP_BRIGHTNESS, self.brightnessSpinBox.value())
 
     def setContrast(self):
-        self.camera.set(cv2.CAP_PROP_CONTRAST, self.contrastSpinBox.value())
+        self.worker.camera.capture.set(cv2.CAP_PROP_CONTRAST, self.contrastSpinBox.value())
 
     def setGain(self):
-        self.camera.set(cv2.CAP_PROP_GAIN, self.gainSpinBox.value())
+        self.worker.camera.capture.set(cv2.CAP_PROP_GAIN, self.gainSpinBox.value())
 
     def setExposure(self):
         # the -1 fixes weird off-by-one openCV bug
-        self.camera.set(cv2.CAP_PROP_EXPOSURE, self.exposureSpinBox.value()-1)
+        self.worker.camera.capture.set(cv2.CAP_PROP_EXPOSURE, self.exposureSpinBox.value()-1)
 
     def setRotation(self):
         #self.camera.set_rotation(self.isLeft, self.rotationSpinBox.value())
@@ -138,6 +138,7 @@ class Worker(QtCore.QThread):
         # rotate and scale this
         frame = self.get_frame()
         cv2.imshow("Preview", frame)
+        pass
 
     def captureBoth(self):
         for i in [0, 1]:
@@ -171,9 +172,14 @@ class Worker(QtCore.QThread):
 class Camera(object):
     def __init__(self, device):
         self.capture = cv2.VideoCapture(device)
+        #self.capture.set(cv2.CAP_PROP_FOURCC,  cv2.VideoWriter_fourcc(*'MJPG'))
+        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920.0)
+        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080.0)
+        print "set resolution"
 
     def get_frame(self):
-        return self.capture.read()[1]
+        frame = self.capture.read()[1]
+        return frame
 
     def __enter__(self):
         return self
@@ -185,18 +191,26 @@ class Camera(object):
 
 def main():
     parser = argparse.ArgumentParser(description="UI utility for time lapse imagery.")
-    parser.add_argument("device", type=int, help="Camera's device index for OpenCV. (0, 1, 2, ...)")
+    parser.add_argument("devices", type=int, help="Camera's device index for OpenCV. (0, 1, 2, ...)")
     args = parser.parse_args()
 
-    with Camera(args.device) as camera:
-        app = QtGui.QApplication(['Camera Workbench'])
-        thread = Worker(camera)
-        thread.start()
-        mainWindow = MainWindow(camera, thread)
-        mainWindow.show()
+    with Camera(args.devices) as camera:
+        #app = QtGui.QApplication(['Camera Workbench'])
+        #thread = Worker(camera)
+        #thread.start()
+        #mainWindow = MainWindow(thread)
+        #mainWindow.show()
+        while True:
+            ret, frame = camera.capture.read()
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            # Display the resulting frame
+            cv2.imshow('frame',gray)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
     main()
-
