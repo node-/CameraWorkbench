@@ -8,13 +8,13 @@
 
 from SaveState import guisave, guirestore
 from PyQt4 import QtGui, QtCore, uic
+from camera import AmscopeCamera, WebCamera
 
 import cv2
 import time
 import os
 import argparse
 import sys
-
 
 class MainWindow(QtGui.QMainWindow):
     def __init__(self, worker):
@@ -60,6 +60,7 @@ class CameraSettings(QtGui.QWidget):
     def __init__(self, worker):
         QtGui.QWidget.__init__(self)
         self.ui = uic.loadUi('ui/parameters.ui', self)
+        self.setWindowTitle("Camera Settings")
         self.worker = worker
 
         self.setFixedSize(self.size())
@@ -87,17 +88,17 @@ class CameraSettings(QtGui.QWidget):
         setFunction()
 
     def setBrightness(self):
-        self.worker.camera.capture.set(cv2.CAP_PROP_BRIGHTNESS, self.brightnessSpinBox.value())
+        self.worker.camera.set_brightness(self.brightnessSpinBox.value())
 
     def setContrast(self):
-        self.worker.camera.capture.set(cv2.CAP_PROP_CONTRAST, self.contrastSpinBox.value())
+        self.worker.camera.set_contrast(self.contrastSpinBox.value())
 
     def setGain(self):
-        self.worker.camera.capture.set(cv2.CAP_PROP_GAIN, self.gainSpinBox.value())
+        self.worker.camera.set_gain(self.gainSpinBox.value())
 
     def setExposure(self):
         # the -1 fixes weird off-by-one openCV bug
-        self.worker.camera.capture.set(cv2.CAP_PROP_EXPOSURE, self.exposureSpinBox.value()-1)
+        self.worker.camera.set_exposure(self.exposureSpinBox.value()-1)
 
     def setRotation(self):
         #self.camera.set_rotation(self.isLeft, self.rotationSpinBox.value())
@@ -114,6 +115,7 @@ class Worker(QtCore.QThread):
         self.camera = camera
         self.running = True
         self.intervalEnabled = False
+        self.scale = 60
 
     def run(self):
         while self.running:
@@ -135,10 +137,7 @@ class Worker(QtCore.QThread):
         return self.camera.get_frame()
 
     def show_frame(self):
-        # rotate and scale this
-        frame = self.get_frame()
-        cv2.imshow("Preview", frame)
-        pass
+        self.camera.show_frame(scale=self.scale)
 
     def captureBoth(self):
         for i in [0, 1]:
@@ -169,47 +168,25 @@ class Worker(QtCore.QThread):
         self.terminate()
 
 
-class Camera(object):
-    def __init__(self, device):
-        self.capture = cv2.VideoCapture(device)
-        #self.capture.set(cv2.CAP_PROP_FOURCC,  cv2.VideoWriter_fourcc(*'MJPG'))
-        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920.0)
-        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080.0)
-        print "set resolution"
-
-    def get_frame(self):
-        frame = self.capture.read()[1]
-        return frame
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.capture.release()
-        cv2.destroyAllWindows()
-
-
 def main():
     parser = argparse.ArgumentParser(description="UI utility for time lapse imagery.")
-    parser.add_argument("devices", type=int, help="Camera's device index for OpenCV. (0, 1, 2, ...)")
+    parser.add_argument("webcam", type=int, help="OpenCV device index for webcams. (0, 1, 2, ...)")
+    parser.add_argument("amscope", type=int, help="Amscope device index for driver's bindings. (0, 1, 2, ...)")
     args = parser.parse_args()
 
-    with Camera(args.devices) as camera:
-        #app = QtGui.QApplication(['Camera Workbench'])
-        #thread = Worker(camera)
-        #thread.start()
-        #mainWindow = MainWindow(thread)
-        #mainWindow.show()
-        while True:
-            ret, frame = camera.capture.read()
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-            # Display the resulting frame
-            cv2.imshow('frame',gray)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
-    sys.exit(app.exec_())
+    with AmscopeCamera(args.webcam) as amscope, WebCamera(args.amscope) as webcam:
+        app = QtGui.QApplication(['Camera Workbench'])
+        amscopeThread = Worker(amscope)
+        amscopeThread.start()
+        mainWindow1 = MainWindow(amscopeThread)
+        mainWindow1.show()
+        
+        webcamThread = Worker(webcam)
+        webcamThread.start()
+        mainWindow2 = MainWindow(webcamThread)
+        mainWindow2.show()
+        
+        sys.exit(app.exec_())
 
 
 if __name__ == '__main__':

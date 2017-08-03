@@ -16,7 +16,7 @@
 
 # ============= enthought library imports =======================
 # ============= standard library imports ========================
-from numpy import zeros, uint8, uint32
+from numpy import zeros, uint8, uint32, asarray
 from cStringIO import StringIO
 import os
 import ctypes
@@ -97,6 +97,9 @@ class ToupCamCamera(object):
         image = pil.fromarray(bgr, 'RGB')
         b,g,r = image.split()
         return pil.merge('RGB', (r,g,b))
+
+    def get_np_image(self):
+        return asarray(self.get_pil_image())
 
     def get_image_data(self, *args, **kw):
         d = self._data
