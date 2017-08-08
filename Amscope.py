@@ -14,15 +14,14 @@
 # limitations under the License.
 # ===============================================================================
 
-# ============= enthought library imports =======================
-# ============= standard library imports ========================
-from numpy import zeros, uint8, uint32, asarray
+from numpy import zeros, uint8, uint32, asarray, float32
 from cStringIO import StringIO
+from PIL import Image as pil
+
 import os
 import ctypes
 import sys
-from PIL import Image as pil
-# ============= local library imports  ==========================
+import camera
 
 root = os.path.dirname(__file__)
 if sys.platform == 'darwin':
@@ -38,7 +37,6 @@ TOUPCAM_EVENT_STILLIMAGE = 5  # snap (still) frame arrived, use Toupcam_PullStil
 TOUPCAM_EVENT_ERROR = 128  # something error happens
 TOUPCAM_EVENT_DISCONNECTED = 129  # camera disconnected
 TOUPCAM_EVENT_TIMEOUT = 130 # timeout
-
 
 class HToupCam(ctypes.Structure):
     _fields_ = [('unused', ctypes.c_int)]
@@ -62,6 +60,7 @@ class ToupCamCamera(object):
         if bits not in (32,):
             raise ValueError('Bits needs to be 8 or 32')
         # bits = 8
+        self.timeout = False
         self.resolution = resolution
         self.cam = self.get_camera(index=camIndex)
         self.bits = bits
@@ -99,7 +98,10 @@ class ToupCamCamera(object):
         return pil.merge('RGB', (r,g,b))
 
     def get_np_image(self):
-        return asarray(self.get_pil_image())
+        data = self.get_image_data()
+        raw = data.view(uint8).reshape(data.shape+(-1,))
+        bgr = raw[...,:3]
+        return bgr
 
     def get_image_data(self, *args, **kw):
         d = self._data
@@ -128,6 +130,10 @@ class ToupCamCamera(object):
         self._cnt = 0
 
         def get_frame(nEvent, ctx):
+            """
+            Callback function for Amscope driver DLL. Defined inline because it is
+            only passed as a parameter to the driver's "PullMode" init function.
+            """
             if nEvent == TOUPCAM_EVENT_IMAGE:
                 w, h = ctypes.c_uint(), ctypes.c_uint()
                 bits = ctypes.c_int(self.bits)
@@ -149,11 +155,12 @@ class ToupCamCamera(object):
                 self._do_save(still)
 
             elif nEvent == TOUPCAM_EVENT_TIMEOUT:
-                print "Camera timed out! Perhaps a bandwidth issue."
+                self.timeout = True
+                raise camera.CameraTimeoutError()
             elif nEvent == TOUPCAM_EVENT_ERROR:
-                print "Camera error!"
+                raise camera.CameraError()
             elif nEvent == TOUPCAM_EVENT_DISCONNECTED:
-                print "Camera disconnected!"
+                raise camera.CameraDisconnectedError()
 
         CB = ctypes.CFUNCTYPE(None, ctypes.c_uint, ctypes.c_void_p)
 
@@ -177,32 +184,48 @@ class ToupCamCamera(object):
     def set_gamma(self, v):
         self._lib_func('put_Gamma', ctypes.c_int(v))
 
-    def set_contrast(self, v):
-        self._lib_func('put_Contrast', ctypes.c_int(v))
-
-    def set_brightness(self, v):
-        self._lib_func('put_Brightness', ctypes.c_int(v))
-
-    def set_saturation(self, v):
-        self._lib_func('put_Saturation', ctypes.c_int(v))
-
-    def set_hue(self, v):
-        self._lib_func('put_Hue', ctypes.c_int(v))
-
     def get_gamma(self):
         return self._lib_get_func('Gamma')
+
+    def set_contrast(self, v):
+        self._lib_func('put_Contrast', ctypes.c_int(v))
 
     def get_contrast(self):
         return self._lib_get_func('Contrast')
 
+    def set_brightness(self, v):
+        self._lib_func('put_Brightness', ctypes.c_int(v))
+
     def get_brightness(self):
         return self._lib_get_func('Brightness')
+
+    def set_saturation(self, v):
+        self._lib_func('put_Saturation', ctypes.c_int(v))
 
     def get_saturation(self):
         return self._lib_get_func('Saturation')
 
+    def set_hue(self, v):
+        self._lib_func('put_Hue', ctypes.c_int(v))
+
     def get_hue(self):
         return self._lib_get_func('Hue')
+
+    """
+    # These functions cause a memory access violation error. Avoid!
+
+    def set_level_range(self, v):
+        self._lib_func('put_LevelRange', ctypes.c_int(v))
+
+    def get_level_range(self):
+        return self._lib_get_func('LevelRange')
+    """
+
+    def set_auto_exposure(self, v):
+        self._lib_func('put_AutoExpoTarget', ctypes.c_ushort(v))
+
+    def get_auto_exposure(self):
+        return self._lib_get_func('AutoExpoTarget')
 
     # todo: write these functions
     # toupcam_ports(HRESULT)  Toupcam_get_ExpoTime(HToupCam h, unsigned* Time); /* in microseconds */
@@ -232,14 +255,15 @@ class ToupCamCamera(object):
         if self._lib_func('get_TempTint', ctypes.byref(temp), ctypes.byref(tint)):
             return temp.value, tint.value
 
-    def get_auto_exposure(self):
+    def get_auto_exposure_enabled(self):
         expo_enabled = ctypes.c_bool()
         result = lib.Toupcam_get_AutoExpoEnable(self.cam, ctypes.byref(expo_enabled))
         if success(result):
             return expo_enabled.value
 
-    def set_auto_exposure(self, expo_enabled):
+    def set_auto_exposure_enabled(self, expo_enabled):
         lib.Toupcam_put_AutoExpoEnable(self.cam, expo_enabled)
+
 
     def get_camera(self, index=None):
         func = lib.Toupcam_OpenByIndex
