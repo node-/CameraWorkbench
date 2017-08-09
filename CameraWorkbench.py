@@ -7,8 +7,9 @@
 
 from SaveState import guisave, guirestore
 from PyQt4 import QtGui, QtCore, uic
-from camera import AmscopeCamera, WebCamera
 
+import camera
+import CameraSettings
 import cv2
 import time
 import os
@@ -93,99 +94,11 @@ class MainWindow(QtGui.QMainWindow):
         event.accept()
 
 
-class CameraSettings(QtGui.QWidget):
-    def __init__(self, camera, device):
-        QtGui.QWidget.__init__(self)
-        self.ui = uic.loadUi('ui/amscope_parameters.ui', self)
-        self.setWindowTitle("Camera Settings")
-        self.camera = camera
-        self.deviceId = device
-        self.deviceNameStr = self.deviceId
-        self.setFixedSize(self.size())
-        self.settings = QtCore.QSettings(
-            'ui/amscope_parameters_'+str(self.deviceId)+'.ini',
-            QtCore.QSettings.IniFormat)
-        guirestore(self)
-        self.deviceNameStr = str(self.deviceName.text())
-        self.wireUiElements()
-
-    def wireUiElements(self):
-        self.connectObjs((self.brightnessSlider, self.brightnessSpinBox), self.setBrightness)
-        self.connectObjs((self.contrastSlider, self.contrastSpinBox), self.setContrast)
-        self.connectObjs((self.exposureSlider, self.exposureSpinBox), self.setExposure)
-        self.connectObjs((self.tempSlider, self.tempSpinBox), self.setTempTint)
-        self.connectObjs((self.tintSlider, self.tintSpinBox), self.setTempTint)
-        self.connectObjs((self.hueSlider, self.hueSpinBox), self.setHue)
-        self.connectObjs((self.rotationSlider, self.rotationSpinBox), self.setRotation)
-        self.connectObjs((self.gammaSlider, self.gammaSpinBox), self.setGamma)
-        self.connectObjs((self.saturationSlider, self.saturationSpinBox), self.setSaturation)
-        self.deviceName.textChanged.connect(
-            lambda: self.changeName(str(self.deviceName.text())))
-
-    def connectObjs(self, objTuple, setFunction):
-        """
-        Mutually connect two objects in a tuple so their values stay equal.
-        Used to wire up sliders to spin boxes for camera settings.
-        """
-        first, second = objTuple
-        first.valueChanged.connect(
-            lambda: self.changeValue(first, second, setFunction))
-        second.valueChanged.connect(
-            lambda: self.changeValue(second, first, setFunction))
-
-    def changeValue(self, fromObj, toObj, setFunction):
-        toObj.setValue(fromObj.value())
-        setFunction()
-
-    def changeName(self, deviceName):
-        self.deviceNameStr = deviceName
-
-    def setBrightness(self):
-        self.camera.set_brightness(self.brightnessSpinBox.value())
-
-    def setContrast(self):
-        self.camera.set_contrast(self.contrastSpinBox.value())
-
-    def setExposure(self):
-        self.camera.set_exposure(self.exposureSpinBox.value())
-
-    def setTempTint(self):
-        self.camera.set_temp_tint(self.tempSpinBox.value(), self.tintSpinBox.value())
-
-    def setHue(self):
-        self.camera.set_hue(self.hueSpinBox.value())
-
-    def setGamma(self):
-        self.camera.set_gamma(self.gammaSpinBox.value())
-
-    def setSaturation(self):
-        self.camera.set_saturation(self.saturationSpinBox.value())
-
-    def setRotation(self):
-        self.camera.set_rotation(self.rotationSpinBox.value())
-
-    def applySettings(self):
-        settingsFuncs = [self.setBrightness, self.setContrast, self.setExposure,
-                        self.setTempTint, self.setHue, self.setGamma, 
-                        self.setSaturation, self.setRotation]
-
-        for func in settingsFuncs:
-            func()
-
-    def reset(self):
-        guirestore(self)
-        self.applySettings()
-
-    def closeEvent(self, event):
-        guisave(self)
-        event.accept()
-
-
 class Worker(QtCore.QThread):
     """
     QT thread for activating cameras, capturing and scaling images.
     self.cameras is actually a list of CameraSettings, which act as
-    camera managers 
+    camera managers.
     """
     def __init__(self, cameras):
         QtCore.QThread.__init__(self)
@@ -204,8 +117,9 @@ class Worker(QtCore.QThread):
             if self.intervalEnabled:
                 self.captureAll()
                 # actual interval is different from the specified interval due to
-                # the time it takes for cameras to activate
-                interval = self.interval - len(self.cameras)*CAMERA_ACTIVATION_TIME_SECONDS
+                # the time it takes for cameras to activate. The +1 accounts for
+                # computation time.
+                interval = self.interval - len(self.cameras)*(CAMERA_ACTIVATION_TIME_SECONDS+1)
                 start = time.time()
                 while time.time() < start + interval:
                     self.show_frame()
@@ -271,8 +185,7 @@ class Worker(QtCore.QThread):
             self.camera.camera.deactivate()
         self.camera = self.cameras[index]
         self.camera.camera.activate()
-        self.camera.reset()
-        time.sleep(CAMERA_ACTIVATION_TIME_SECONDS)
+        self.camera.reset(CAMERA_ACTIVATION_TIME_SECONDS)
 
     def kill(self):
         self.running = False
@@ -290,18 +203,18 @@ def main():
     app = QtGui.QApplication(['Camera Workbench'])
 
     if args.use_amscope:
-        Camera = AmscopeCamera
+        Camera = camera.AmscopeCamera
+        CameraManager = CameraSettings.AmscopeCameraSettings
     else:
-        CAMERA_ACTIVATION_TIME_SECONDS = 0
-        Camera = WebCamera
+        Camera = camera.WebCamera
+        CameraManager = CameraSettings.WebCameraSettings
 
-    cams = [CameraSettings(Camera(device), device) for device in args.devices]
+    cams = [CameraManager(Camera(device, fullRes=True), device) for device in args.devices]
     worker = Worker(cams)
     worker.start()
     mainWindow = MainWindow(worker)
     mainWindow.show()
     sys.exit(app.exec_())
-
 
 if __name__ == '__main__':
     main()

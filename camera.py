@@ -90,10 +90,14 @@ class AbstractCamera(object):
 
 class AmscopeCamera(AbstractCamera):
     """Camera class impl for the Amscope cameras, which have more camera settings than webcams."""
-    def __init__(self, device):
+    def __init__(self, device, fullRes=False):
         self.rotation = 0
         self.device = device
         self.capture = None
+        if not fullRes:
+            self.resolution = 1
+        else:
+            self.resolution = 0
 
     def activate(self):
         #print "activating camera " + str(self.device)
@@ -108,7 +112,7 @@ class AmscopeCamera(AbstractCamera):
         self.capture = None
 
     def open_cam(self, device):
-        cap = Amscope.ToupCamCamera(camIndex=device)
+        cap = Amscope.ToupCamCamera(camIndex=device, resolution=self.resolution)
         if cap.open():
             return cap
         else:
@@ -151,12 +155,20 @@ class AmscopeCamera(AbstractCamera):
 
 class WebCamera(AbstractCamera):
     """Camera class impl for webcams that are supported by OpenCV3."""
-    def __init__(self, device):
+    def __init__(self, device, fullRes=True):
         self.rotation = 0
         self.device = device
         self.capture = cv2.VideoCapture(device)
-        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920.0)
-        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080.0)
+        if fullRes:
+            self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1920.0)
+            self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080.0)
+
+    """Activation and deactivation are probably not required for webcams."""
+    def activate(self):
+        pass
+
+    def deactivate(self):
+        pass
 
     def get_frame(self):
         frame = self.rotate_bound(self.capture.read()[1], self.rotation)
