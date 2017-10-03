@@ -31,9 +31,10 @@ class MainWindow(QtGui.QMainWindow):
         self.settings = QtCore.QSettings('ui/main.ini', QtCore.QSettings.IniFormat)
         guirestore(self)
         self.worker = worker
+        self.timelapse = TimeLapse(self.worker)
         self.populateDeviceList()
-        self.setInitValues()
         self.wireUiElements()
+        self.setInitValues()
 
     def populateDeviceList(self):
         i = 0
@@ -49,10 +50,10 @@ class MainWindow(QtGui.QMainWindow):
 
     def setInitValues(self):
         self.worker.scale = self.previewScaleSpinBox.value()
-        self.worker.interval = self.intervalSpinBox.value()
-        self.worker.intervalEnabled = self.intervalEnabled.isChecked()
         self.worker.previewEnabled = self.previewEnabled.isChecked()
         self.worker.setImagesPath(str(self.capturePath.text()))
+        self.timelapse.interval = self.intervalSpinBox.value()
+        self.timelapse.intervalEnabled = self.intervalEnabled.isChecked()
 
     def wireUiElements(self):
         # Change device to selected device
@@ -72,27 +73,62 @@ class MainWindow(QtGui.QMainWindow):
             lambda: self.worker.setImagesPath(str(self.capturePath.text())))
 
         # Capture Image, either ALL or Selected Device
-        self.snapAllButton.clicked.connect(lambda: self.worker.captureAll())
-        self.snapSelectedButton.clicked.connect(lambda: self.worker.captureImage())
+        self.snapAllButton.clicked.connect(
+            lambda: self.worker.actionQueue.append(self.worker.captureAll))
+        self.snapSelectedButton.clicked.connect(
+            lambda: self.worker.actionQueue.append(self.worker.captureImage))
 
         # Interval value and checkbox
         self.intervalSpinBox.valueChanged.connect(
-            lambda: self.worker.setInterval(self.intervalSpinBox.value()))
-        self.intervalEnabled.stateChanged.connect(
-            lambda: self.worker.setIntervalEnabled(self.intervalEnabled.isChecked()))
+            lambda: self.timelapse.setInterval(self.intervalSpinBox.value()))
+        self.intervalEnabled.stateChanged.connect(lambda: self.toggleTimelapse())
+
+        # Reconstruct interval photography
+        self.reconstructEnabled.stateChanged.connect(
+            lambda: self.worker.setReconstructEnabled(self.reconstructEnabled.isChecked()))
+            
+
+    def toggleTimelapse(self):
+        self.timelapse.setIntervalEnabled(self.intervalEnabled.isChecked())
+        if self.intervalEnabled.isChecked():
+            self.timelapse.running = True
+            self.timelapse.start()
+        else:
+            self.timelapse.running = False
 
     def switchCamera(self, item):
         i = int(self.deviceList.indexFromItem(item).row())
-        self.worker.switchCamera(i)
+        self.worker.actionQueue.append(lambda: self.worker.switchCamera(i))
 
     def closeEvent(self, event):
         self.worker.running = False
         for settings in self.worker.cameras:
             settings.closeEvent(event)
-        self.intervalEnabled.setChecked(False)
         guisave(self)
         event.accept()
 
+class TimeLapse(QtCore.QThread):
+    def __init__(self, worker):
+        QtCore.QThread.__init__(self)
+        self.worker = worker
+        self.running = False
+
+    def run(self):
+        while self.running:
+            self.capture()
+            interval = self.interval - len(self.worker.cameras)*(CAMERA_ACTIVATION_TIME_SECONDS+1)
+            start = time.time()
+            while self.running and time.time() < start + self.interval:
+                pass
+
+    def capture(self):
+        self.worker.actionQueue.append(self.worker.captureAll)
+
+    def setIntervalEnabled(self, enabled):
+        self.intervalEnabled = enabled
+
+    def setInterval(self, interval):
+        self.interval = interval
 
 class Worker(QtCore.QThread):
     """
@@ -105,28 +141,20 @@ class Worker(QtCore.QThread):
         self.cameras = cameras
         self.camera = None
         self.running = True
-        self.intervalEnabled = False
         self.scale = 60
         self.previewEnabled = False
-
-        # not implemented
-        self.hdrEnabled = False
+        self.reconstructEnabled = False
+        self.actionQueue = []
 
     def run(self):
         while self.running:
-            if self.intervalEnabled:
-                self.captureAll()
-                # actual interval is different from the specified interval due to
-                # the time it takes for cameras to activate. The +1 accounts for
-                # computation time.
-                interval = self.interval - len(self.cameras)*(CAMERA_ACTIVATION_TIME_SECONDS+1)
-                start = time.time()
-                while time.time() < start + interval:
-                    self.show_frame()
-            else:
-                self.show_frame()
-
+            self.idle()
         self.kill()
+
+    def idle(self):
+        while self.actionQueue:
+            self.actionQueue.pop(0)()
+        self.show_frame()
 
     def createPathIfNotExists(self, path):
         if not os.path.exists(path):
@@ -138,21 +166,34 @@ class Worker(QtCore.QThread):
 
     def show_frame(self):
         title = "Preview"
-        if self.previewEnabled and self.camera.camera.capture:
-            self.camera.camera.show_frame(title, scale=self.scale)
-        else:
-            cv2.destroyWindow(title)
+        try:
+            if self.previewEnabled and self.camera.camera.capture:
+                self.camera.camera.show_frame(title, scale=self.scale)
+            else:
+                cv2.destroyWindow(title)
+        except AttributeError:
+            print "Camera detached!"
+            self.kill()
 
     def captureAll(self):
+        images = []
         for i in range(len(self.cameras)):
             self.switchCamera(i)
-            self.captureImage()
+            images.append(self.captureImage())
+
+        if self.reconstructEnabled:
+            import reconstructor
+            outputDir = os.path.join(self.imagesPath, "reconstruction", self.getDateString())
+            self.createPathIfNotExists(outputDir)
+            reconstructor.convertPngsToJpgs(images, outputDir)
+            reconstructor.runCMPMVS(outputDir)
 
     def captureImage(self):
         cameraSettings = self.camera
         frame = cameraSettings.camera.get_frame()
         filename = self.getImageFilepath(self.imagesPath, cameraSettings.deviceNameStr)
         cv2.imwrite(filename, frame)
+        return filename
 
     def getImageFilepath(self, path, deviceName):
         """
@@ -162,23 +203,22 @@ class Worker(QtCore.QThread):
         self.assertPathNotNull(path)
         newPath = os.path.join(path, str(deviceName))
         self.createPathIfNotExists(newPath)
-        dateString = time.strftime("%Y-%m-%d_%H-%M-%S")
-        return os.path.join(newPath, dateString + ".png")
+        return os.path.join(newPath, self.getDateString() + ".png")
 
-    def setIntervalEnabled(self, enabled):
-        self.intervalEnabled = enabled
+    def getDateString(self):
+        return time.strftime("%Y-%m-%d_%H-%M-%S")
 
     def setPreviewEnabled(self, enabled):
         self.previewEnabled = enabled
+
+    def setReconstructEnabled(self, enabled):
+        self.reconstructEnabled = enabled
 
     def setImagesPath(self, path):
         self.imagesPath = path
 
     def setScale(self, scale):
         self.scale = scale
-
-    def setInterval(self, interval):
-        self.interval = interval
 
     def switchCamera(self, index):
         if self.camera:
@@ -191,7 +231,6 @@ class Worker(QtCore.QThread):
         self.running = False
         for cam in self.cameras:
             cam.camera.close()
-        self.terminate()
 
 def main():
     parser = argparse.ArgumentParser(description="UI utility for time lapse and HDR imagery.")
@@ -214,7 +253,9 @@ def main():
     worker.start()
     mainWindow = MainWindow(worker)
     mainWindow.show()
-    sys.exit(app.exec_())
+    app.exec_()
+    time.sleep(2)
+    app.quit()
 
 if __name__ == '__main__':
     main()

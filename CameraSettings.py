@@ -59,7 +59,9 @@ class AbstractCameraSettings(QtGui.QWidget):
 
     def applySettings(self):
         for func in self.settingsFuncs:
-            func()
+            if not func == self.setExposure:
+                # temporarily disabling exposure setting due to exposure bug
+                func()
 
     def reset(self, waitTime):
         guirestore(self)

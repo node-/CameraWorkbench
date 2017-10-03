@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>588</width>
-    <height>379</height>
+    <height>349</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -204,24 +204,6 @@
      <string>(s)</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="hdrEnabled">
-    <property name="geometry">
-     <rect>
-      <x>400</x>
-      <y>50</y>
-      <width>111</width>
-      <height>31</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>11</pointsize>
-     </font>
-    </property>
-    <property name="text">
-     <string>HDR</string>
-    </property>
-   </widget>
    <widget class="QListWidget" name="deviceList">
     <property name="geometry">
      <rect>
@@ -279,6 +261,24 @@
     </property>
     <property name="text">
      <string>Snap Selected!</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="reconstructEnabled">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>270</y>
+      <width>191</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="text">
+     <string>Reconstruct w/ CMPMVS</string>
     </property>
    </widget>
   </widget>
