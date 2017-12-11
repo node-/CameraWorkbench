@@ -20,6 +20,7 @@ class AbstractCameraSettings(QtGui.QWidget):
         self.deviceNameStr = deviceName if deviceName else self.deviceId
 
     def wireUiElements(self):
+        self.saveButton.clicked.connect(lambda: self.save())
         self.connectObjs((self.brightnessSlider, self.brightnessSpinBox), self.setBrightness)
         self.connectObjs((self.contrastSlider, self.contrastSpinBox), self.setContrast)
         self.connectObjs((self.exposureSlider, self.exposureSpinBox), self.setExposure)
@@ -59,9 +60,10 @@ class AbstractCameraSettings(QtGui.QWidget):
 
     def applySettings(self):
         for func in self.settingsFuncs:
-            if not func == self.setExposure:
-                # temporarily disabling exposure setting due to exposure bug
-                func()
+            func()
+
+    def save(self):
+        guisave(self)
 
     def reset(self, waitTime):
         guirestore(self)

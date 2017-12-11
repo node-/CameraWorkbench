@@ -15,6 +15,7 @@ def runCMPMVS(workingDir):
     sfmCommand = [os.path.join(cmpmvsDir, "visualSfM_CMPMVS.bat")]
     sfmCommand += [os.path.join(cmpmvsDir, "VisualSFM.exe")]
     sfmCommand += [os.path.join(cmpmvsDir, "CMPMVS.exe")]
+    print sfmCommand
     sfm = subprocess.Popen(sfmCommand + [workingDir], stdout=subprocess.PIPE)
     sfm.communicate()
 
