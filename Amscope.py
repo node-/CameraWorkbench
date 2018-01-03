@@ -227,9 +227,23 @@ class ToupCamCamera(object):
     def get_auto_exposure(self):
         return self._lib_get_func('AutoExpoTarget')
 
+    def set_exposure_time(self, v):
+        self._lib_func('put_ExpoTime', ctypes.c_ulong(v))
+
+    def get_exposure_time(self):
+        return self._lib_get_func('get_ExpoTime')
+
+    def set_exposure_gain(self, v):
+        self._lib_func('put_ExpoAGain', ctypes.c_ushort(v))
+
+    def get_exposure_gain(self):
+        self._lib_get_func('get_ExpoAGain')
+
     # todo: write these functions
     # toupcam_ports(HRESULT)  Toupcam_get_ExpoTime(HToupCam h, unsigned* Time); /* in microseconds */
     # toupcam_ports(HRESULT)  Toupcam_put_ExpoTime(HToupCam h, unsigned Time); /* in microseconds */
+    # toupcam_ports(HRESULT)  Toupcam_get_ExpoAGain(HToupCam h, unsigned short* AGain); /* percent, such as 300 */
+    # toupcam_ports(HRESULT)  Toupcam_put_ExpoAGain(HToupCam h, unsigned short AGain); /* percent */
 
     def do_awb(self, callback=None):
         """

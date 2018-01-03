@@ -24,6 +24,7 @@ class AbstractCameraSettings(QtGui.QWidget):
         self.connectObjs((self.brightnessSlider, self.brightnessSpinBox), self.setBrightness)
         self.connectObjs((self.contrastSlider, self.contrastSpinBox), self.setContrast)
         self.connectObjs((self.exposureSlider, self.exposureSpinBox), self.setExposure)
+        self.connectObjs((self.gainSlider, self.gainSpinBox), self.setGain)
         self.connectObjs((self.rotationSlider, self.rotationSpinBox), self.setRotation)
         self.deviceName.textChanged.connect(self.setDeviceName)
         self.wireSpecialUi()
@@ -55,6 +56,9 @@ class AbstractCameraSettings(QtGui.QWidget):
     def setExposure(self):
         self.camera.set_exposure(self.exposureSpinBox.value())
 
+    def setGain(self):
+        self.camera.set_gain(self.gainSpinBox.value())
+
     def setRotation(self):
         self.camera.set_rotation(self.rotationSpinBox.value())
 
@@ -83,7 +87,7 @@ class WebCameraSettings(AbstractCameraSettings):
         self.camera = camera
         self.deviceId = device
         self.settingsFuncs = [self.setBrightness, self.setContrast,
-                            self.setExposure, self.setRotation]
+                            self.setExposure, self.setRotation, self.setGain]
         self.setFixedSize(self.size())
 
         self.settings = QtCore.QSettings(
@@ -98,13 +102,6 @@ class WebCameraSettings(AbstractCameraSettings):
         #time.sleep(waitTime)
         pass
 
-    def wireSpecialUi(self):
-        self.settingsFuncs.extend([self.setGain])
-        self.connectObjs((self.gainSlider, self.gainSpinBox), self.setGain)
-
-    def setGain(self):
-        self.camera.set_gain(self.gainSpinBox.value())
-
 class AmscopeCameraSettings(AbstractCameraSettings):
     def __init__(self, camera, device):
         QtGui.QWidget.__init__(self)
@@ -114,16 +111,22 @@ class AmscopeCameraSettings(AbstractCameraSettings):
         self.camera = camera
         self.deviceId = device
         self.settingsFuncs = [self.setBrightness, self.setContrast,
-                            self.setExposure, self.setRotation]
+                            self.setExposure, self.setRotation, self.setGain]
         self.setFixedSize(self.size())
 
         self.settings = QtCore.QSettings(
             ui_path + '_' +str(self.deviceId) + '.ini',
             QtCore.QSettings.IniFormat)
-
-        guirestore(self)
+        
         self.setDeviceName()
         self.wireUiElements()
+        guirestore(self)
+
+    def setDeviceSerial(self):
+        self.serialLabel.setText(str(self.camera.capture.get_serial()))
+
+    def setDeviceId(self):
+        self.deviceIdLabel.setText(str(self.deviceId))
 
     def wait(self, waitTime):
         time.sleep(waitTime)

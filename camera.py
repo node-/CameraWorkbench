@@ -104,6 +104,7 @@ class AmscopeCamera(AbstractCamera):
         if self.capture:
             self.deactivate()
         self.capture = self.open_cam(self.device)
+        self.capture.set_auto_exposure_enabled(False)
 
     def deactivate(self):
         #print "deactivating camera " + str(self.device)
@@ -135,7 +136,10 @@ class AmscopeCamera(AbstractCamera):
         self.capture.set_level_range(value)
 
     def set_exposure(self, value):
-        self.capture.set_auto_exposure(value)
+        self.capture.set_exposure_time(value)
+
+    def set_gain(self, value):
+        self.capture.set_exposure_gain(value)
 
     def set_temp_tint(self, temp, tint):
         self.capture.set_temperature_tint(temp, tint)

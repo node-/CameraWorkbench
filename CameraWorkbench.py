@@ -187,6 +187,7 @@ class Worker(QtCore.QThread):
             self.createPathIfNotExists(outputDir)
             reconstructor.convertPngsToJpgs(images, outputDir)
             reconstructor.runCMPMVS(outputDir)
+        self.camera.camera.deactivate()
 
     def captureImage(self):
         cameraSettings = self.camera
@@ -226,6 +227,8 @@ class Worker(QtCore.QThread):
         self.camera = self.cameras[index]
         self.camera.camera.activate()
         self.camera.reset(CAMERA_ACTIVATION_TIME_SECONDS)
+        self.camera.setDeviceSerial()
+        self.camera.setDeviceId()
 
     def kill(self):
         self.running = False

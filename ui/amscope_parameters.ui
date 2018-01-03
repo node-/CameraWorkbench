@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>254</width>
-    <height>542</height>
+    <width>554</width>
+    <height>391</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,8 +17,8 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>140</y>
-     <width>42</width>
+     <y>150</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -38,8 +38,8 @@
   <widget class="QSlider" name="contrastSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>140</y>
+     <x>100</x>
+     <y>150</y>
      <width>160</width>
      <height>22</height>
     </rect>
@@ -64,8 +64,8 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>90</y>
-     <width>42</width>
+     <y>100</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -86,7 +86,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>120</y>
+     <y>130</y>
      <width>211</width>
      <height>16</height>
     </rect>
@@ -98,21 +98,21 @@
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>170</y>
+     <x>290</x>
+     <y>80</y>
      <width>211</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>Auto Exposure Target (10 to 230)</string>
+    <string>Exposure Time (400μs to 2000ms)</string>
    </property>
   </widget>
   <widget class="QSlider" name="exposureSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>190</y>
+     <x>370</x>
+     <y>100</y>
      <width>160</width>
      <height>22</height>
     </rect>
@@ -124,13 +124,13 @@
     </size>
    </property>
    <property name="minimum">
-    <number>10</number>
+    <number>400</number>
    </property>
    <property name="maximum">
-    <number>230</number>
+    <number>2000000</number>
    </property>
    <property name="value">
-    <number>120</number>
+    <number>400</number>
    </property>
    <property name="orientation">
     <enum>Qt::Horizontal</enum>
@@ -139,8 +139,8 @@
   <widget class="QSlider" name="brightnessSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>90</y>
+     <x>100</x>
+     <y>100</y>
      <width>160</width>
      <height>22</height>
     </rect>
@@ -161,36 +161,11 @@
     <enum>Qt::Horizontal</enum>
    </property>
   </widget>
-  <widget class="QSpinBox" name="exposureSpinBox">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>190</y>
-     <width>42</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="minimumSize">
-    <size>
-     <width>42</width>
-     <height>22</height>
-    </size>
-   </property>
-   <property name="minimum">
-    <number>10</number>
-   </property>
-   <property name="maximum">
-    <number>230</number>
-   </property>
-   <property name="value">
-    <number>120</number>
-   </property>
-  </widget>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>70</y>
+     <y>80</y>
      <width>211</width>
      <height>16</height>
     </rect>
@@ -202,8 +177,8 @@
   <widget class="QSlider" name="rotationSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>490</y>
+     <x>370</x>
+     <y>250</y>
      <width>160</width>
      <height>20</height>
     </rect>
@@ -230,8 +205,8 @@
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>470</y>
+     <x>290</x>
+     <y>230</y>
      <width>211</width>
      <height>14</height>
     </rect>
@@ -243,9 +218,9 @@
   <widget class="QSpinBox" name="rotationSpinBox">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>490</y>
-     <width>42</width>
+     <x>290</x>
+     <y>250</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -268,8 +243,8 @@
   <widget class="QSlider" name="tempSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>240</y>
+     <x>100</x>
+     <y>200</y>
      <width>160</width>
      <height>20</height>
     </rect>
@@ -297,7 +272,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>220</y>
+     <y>180</y>
      <width>211</width>
      <height>14</height>
     </rect>
@@ -310,8 +285,8 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>240</y>
-     <width>42</width>
+     <y>200</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -335,7 +310,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>270</y>
+     <y>230</y>
      <width>211</width>
      <height>16</height>
     </rect>
@@ -348,8 +323,8 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>290</y>
-     <width>42</width>
+     <y>250</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -372,8 +347,8 @@
   <widget class="QSlider" name="tintSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>290</y>
+     <x>100</x>
+     <y>250</y>
      <width>160</width>
      <height>22</height>
     </rect>
@@ -401,7 +376,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>320</y>
+     <y>280</y>
      <width>211</width>
      <height>16</height>
     </rect>
@@ -413,8 +388,8 @@
   <widget class="QSlider" name="saturationSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>340</y>
+     <x>100</x>
+     <y>300</y>
      <width>160</width>
      <height>22</height>
     </rect>
@@ -439,8 +414,8 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>340</y>
-     <width>42</width>
+     <y>300</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -460,8 +435,8 @@
   <widget class="QLabel" name="label_9">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>370</y>
+     <x>290</x>
+     <y>180</y>
      <width>211</width>
      <height>16</height>
     </rect>
@@ -473,9 +448,9 @@
   <widget class="QSpinBox" name="gammaSpinBox">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>390</y>
-     <width>42</width>
+     <x>290</x>
+     <y>200</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -498,8 +473,8 @@
   <widget class="QSlider" name="gammaSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>390</y>
+     <x>370</x>
+     <y>200</y>
      <width>160</width>
      <height>22</height>
     </rect>
@@ -527,8 +502,8 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>440</y>
-     <width>42</width>
+     <y>350</y>
+     <width>61</width>
      <height>22</height>
     </rect>
    </property>
@@ -552,7 +527,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>420</y>
+     <y>330</y>
      <width>211</width>
      <height>16</height>
     </rect>
@@ -564,8 +539,8 @@
   <widget class="QSlider" name="hueSlider">
    <property name="geometry">
     <rect>
-     <x>70</x>
-     <y>440</y>
+     <x>100</x>
+     <y>350</y>
      <width>160</width>
      <height>22</height>
     </rect>
@@ -620,14 +595,169 @@
   <widget class="QPushButton" name="saveButton">
    <property name="geometry">
     <rect>
-     <x>122</x>
-     <y>11</y>
+     <x>410</x>
+     <y>340</y>
      <width>111</width>
-     <height>21</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="text">
     <string>Save</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="serialLabel">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>40</y>
+     <width>211</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Device Serial</string>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_13">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>130</y>
+     <width>211</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Gain (100% to 300%)</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="gainSlider">
+   <property name="geometry">
+    <rect>
+     <x>370</x>
+     <y>150</y>
+     <width>160</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="maximumSize">
+    <size>
+     <width>160</width>
+     <height>16777215</height>
+    </size>
+   </property>
+   <property name="minimum">
+    <number>100</number>
+   </property>
+   <property name="maximum">
+    <number>300</number>
+   </property>
+   <property name="value">
+    <number>100</number>
+   </property>
+   <property name="orientation">
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="deviceIdLabel">
+   <property name="geometry">
+    <rect>
+     <x>330</x>
+     <y>20</y>
+     <width>211</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Device ID</string>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="deviceIdLabel_2">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>20</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ID</string>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="deviceIdLabel_3">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>40</y>
+     <width>31</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Serial</string>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="exposureSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>100</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>42</width>
+     <height>22</height>
+    </size>
+   </property>
+   <property name="minimum">
+    <number>400</number>
+   </property>
+   <property name="maximum">
+    <number>2000000</number>
+   </property>
+   <property name="value">
+    <number>400</number>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="gainSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>150</y>
+     <width>61</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="minimumSize">
+    <size>
+     <width>42</width>
+     <height>22</height>
+    </size>
+   </property>
+   <property name="minimum">
+    <number>100</number>
+   </property>
+   <property name="maximum">
+    <number>300</number>
+   </property>
+   <property name="value">
+    <number>100</number>
    </property>
   </widget>
  </widget>
