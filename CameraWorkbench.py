@@ -86,7 +86,6 @@ class MainWindow(QtGui.QMainWindow):
         # Reconstruct interval photography
         self.reconstructEnabled.stateChanged.connect(
             lambda: self.worker.setReconstructEnabled(self.reconstructEnabled.isChecked()))
-            
 
     def toggleTimelapse(self):
         self.timelapse.setIntervalEnabled(self.intervalEnabled.isChecked())

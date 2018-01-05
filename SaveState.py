@@ -43,6 +43,41 @@ def guisave(self):
             state = obj.value()
             settings.setValue(name, state)
 
+def guidebug(self):
+    # debug UI
+    settingsDebug = []
+    settings = self.settings
+    for name, obj in inspect.getmembers(self.ui):
+        if isinstance(obj, QComboBox):
+            name = obj.objectName()  # get combobox name
+            index = obj.currentIndex()  # get current index from combobox
+            text = obj.itemText(index)  # get the text for current index\
+            settingsDebug.append((name, text))
+
+        if isinstance(obj, QLineEdit):
+            name = obj.objectName()
+            value = obj.text()
+            settingsDebug.append((name, value))
+
+        if isinstance(obj, QCheckBox):
+            name = obj.objectName()
+            state = obj.isChecked()
+            settingsDebug.append((name, state))
+
+        if isinstance(obj, QRadioButton):
+            name = obj.objectName()
+            value = obj.isChecked()  # get stored value from registry
+            settingsDebug.append((name, value))
+
+        if isinstance(obj, QSpinBox):
+            name = obj.objectName()
+            state = obj.value()
+            settingsDebug.append((name, state))
+
+    with open("settingsLog_" + str(self.deviceName.text()) + ".txt", "a") as f:
+        for key, value in settingsDebug:
+            f.write("[" + str(key) + "] " + str(value) + "\n")
+        f.write("\n")
 
 def guirestore(self):
     settings = self.settings

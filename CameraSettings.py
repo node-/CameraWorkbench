@@ -5,7 +5,7 @@
     author: Jacob Kosberg
 """
 
-from SaveState import guisave, guirestore
+from SaveState import guisave, guirestore, guidebug
 from PyQt4 import QtGui, QtCore, uic
 from camera import AmscopeCamera, WebCamera
 
@@ -65,6 +65,7 @@ class AbstractCameraSettings(QtGui.QWidget):
     def applySettings(self):
         for func in self.settingsFuncs:
             func()
+        guidebug(self)
 
     def save(self):
         guisave(self)
@@ -93,10 +94,22 @@ class WebCameraSettings(AbstractCameraSettings):
         self.settings = QtCore.QSettings(
             ui_path + '_' +str(self.deviceId) + '.ini',
             QtCore.QSettings.IniFormat)
-        
-        guirestore(self)
+
         self.setDeviceName()
-        self.wireUiElements()
+        self.wireUiElements()        
+        guirestore(self)
+
+    def setDeviceSerial(self):
+        # OpenCV does not support vendor details of VideoCapture objects
+        pass
+
+    def setDeviceId(self):
+        # No deviceId label in UI
+        pass
+
+    def wireSpecialUi(self):
+        # could implement zoom, position, etc.
+        pass
 
     def wait(self, waitTime):
         #time.sleep(waitTime)
@@ -110,20 +123,27 @@ class AmscopeCameraSettings(AbstractCameraSettings):
         self.setWindowTitle("Camera Settings")
         self.camera = camera
         self.deviceId = device
+        self.serial = self.initDeviceSerial()
         self.settingsFuncs = [self.setBrightness, self.setContrast,
                             self.setExposure, self.setRotation, self.setGain]
         self.setFixedSize(self.size())
 
         self.settings = QtCore.QSettings(
-            ui_path + '_' +str(self.deviceId) + '.ini',
+            ui_path + '_' +str(self.serial) + '.ini',
             QtCore.QSettings.IniFormat)
         
         self.setDeviceName()
         self.wireUiElements()
         guirestore(self)
 
+    def initDeviceSerial(self):
+        self.camera.activate()
+        serial = self.camera.capture.get_serial()
+        self.camera.deactivate()
+        return serial
+
     def setDeviceSerial(self):
-        self.serialLabel.setText(str(self.camera.capture.get_serial()))
+        self.serialLabel.setText(self.serial)
 
     def setDeviceId(self):
         self.deviceIdLabel.setText(str(self.deviceId))
