@@ -99,6 +99,9 @@ class WebCameraSettings(AbstractCameraSettings):
         self.wireUiElements()        
         guirestore(self)
 
+    def reset(self, waitTime):
+        pass
+
     def setDeviceSerial(self):
         # OpenCV does not support vendor details of VideoCapture objects
         pass
