@@ -141,7 +141,7 @@ class AmscopeCameraSettings(AbstractCameraSettings):
 
     def initDeviceSerial(self):
         self.camera.activate()
-        serial = self.camera.capture.get_serial()
+        serial = str(self.camera.capture.get_serial())
         self.camera.deactivate()
         return serial
 
