@@ -16,6 +16,8 @@ import os
 import argparse
 import sys
 
+from pympler import tracker
+
 # This is the time it takes to switch Amscope cameras. Used for interval
 # calculation. For webcams, we set equal to 0 since we don't deactivate
 # cameras. (Less risk of hitting USB bandwidth.)
@@ -32,9 +34,12 @@ class MainWindow(QtGui.QMainWindow):
         guirestore(self)
         self.worker = worker
         self.timelapse = TimeLapse(self.worker)
+        self.tr = tracker.SummaryTracker()
+        self.tr.print_diff()
         self.populateDeviceList()
         self.wireUiElements()
         self.setInitValues()
+
 
     def populateDeviceList(self):
         i = 0
@@ -98,6 +103,8 @@ class MainWindow(QtGui.QMainWindow):
     def switchCamera(self, item):
         i = int(self.deviceList.indexFromItem(item).row())
         self.worker.actionQueue.append(lambda: self.worker.switchCamera(i))
+        print("diff!")
+        self.tr.print_diff()
 
     def closeEvent(self, event):
         self.worker.running = False
