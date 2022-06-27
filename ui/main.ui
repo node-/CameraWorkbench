@@ -24,7 +24,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Settings</string>
+     <string>Device Settings</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_2">
@@ -60,7 +60,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Path to Images</string>
+     <string>Path to Output Images</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="capturePath">
@@ -169,7 +169,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Capture</string>
+     <string>Enable</string>
     </property>
    </widget>
    <widget class="QSpinBox" name="intervalSpinBox">
@@ -219,7 +219,7 @@
      <rect>
       <x>210</x>
       <y>90</y>
-      <width>121</width>
+      <width>171</width>
       <height>31</height>
      </rect>
     </property>
@@ -229,7 +229,7 @@
      </font>
     </property>
     <property name="text">
-     <string>Show Preview</string>
+     <string>Show Preview Window</string>
     </property>
    </widget>
    <widget class="QLabel" name="label_8">
@@ -268,7 +268,7 @@
      <rect>
       <x>210</x>
       <y>270</y>
-      <width>191</width>
+      <width>201</width>
       <height>31</height>
      </rect>
     </property>
@@ -278,7 +278,10 @@
      </font>
     </property>
     <property name="text">
-     <string>Reconstruct w/ CMPMVS</string>
+     <string>Reconstruct with CMPMVS</string>
+    </property>
+    <property name="checkable">
+     <bool>false</bool>
     </property>
    </widget>
   </widget>

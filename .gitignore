@@ -101,5 +101,6 @@ ENV/
 .mypy_cache/
 
 data
+*.ini
 settingsLog*
 *.zip
