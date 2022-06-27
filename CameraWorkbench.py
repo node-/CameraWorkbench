@@ -16,51 +16,62 @@ import os
 import argparse
 import sys
 
-from pympler import tracker
+# Used for profiling
+#from pympler import tracker
 
 # This is the time it takes to switch Amscope cameras. Used for interval
 # calculation. For webcams, we set equal to 0 since we don't deactivate
 # cameras. (Less risk of hitting USB bandwidth.)
 CAMERA_ACTIVATION_TIME_SECONDS = 5
 
+HOME_FOLDER = "C:\Users\europaexpts\Documents\code\CameraWorkbench"
+
 class MainWindow(QtGui.QMainWindow):
     """MainWindow initializes UI objects like buttons, text/check/spin boxes, etc."""
-    def __init__(self, worker):
+    def __init__(self, worker, change_signal):
         QtGui.QMainWindow.__init__(self)
         self.ui = uic.loadUi('ui/main.ui', self)
         self.setWindowTitle("Camera Workbench")
         self.setFixedSize(self.size())
         self.settings = QtCore.QSettings('ui/main.ini', QtCore.QSettings.IniFormat)
         guirestore(self)
+        self.change_detected = change_signal
         self.worker = worker
         self.timelapse = TimeLapse(self.worker)
-        self.tr = tracker.SummaryTracker()
-        self.tr.print_diff()
-        self.populateDeviceList()
+        #self.tr = tracker.SummaryTracker()
+        #self.tr.print_diff()
         self.wireUiElements()
+        self.populateDeviceList()
         self.setInitValues()
 
 
     def populateDeviceList(self):
-        i = 0
+        self.deviceList.clear()
         for camera in self.worker.cameras:
             item = QtGui.QListWidgetItem(str(camera.deviceNameStr))
+            if camera.camera.disabled:
+                item.setForeground(QtGui.QColor(255, 0, 0))
             self.deviceList.addItem(item)
 
+
             # Select and activate the first camera
-            if i == 0:
-                self.deviceList.setCurrentItem(item)
-                self.switchCamera(item)
-            i += 1
+            #if i == 0:
+            #    self.deviceList.setCurrentItem(item)
+            #    self.switchCamera(item)
+            #i += 1
+
+    def update_ui(self):
+        self.populateDeviceList()
 
     def setInitValues(self):
         self.worker.scale = self.previewScaleSpinBox.value()
-        self.worker.previewEnabled = self.previewEnabled.isChecked()
+        self.worker.previewEnabled = False #self.previewEnabled.isChecked()
         self.worker.setImagesPath(str(self.capturePath.text()))
         self.timelapse.interval = self.intervalSpinBox.value()
         self.timelapse.intervalEnabled = self.intervalEnabled.isChecked()
 
     def wireUiElements(self):
+        self.change_detected.connect(self.update_ui)
         # Change device to selected device
         self.deviceList.itemClicked.connect(self.switchCamera)
 
@@ -103,8 +114,7 @@ class MainWindow(QtGui.QMainWindow):
     def switchCamera(self, item):
         i = int(self.deviceList.indexFromItem(item).row())
         self.worker.actionQueue.append(lambda: self.worker.switchCamera(i))
-        print("diff!")
-        self.tr.print_diff()
+        #self.tr.print_diff()
 
     def closeEvent(self, event):
         self.worker.running = False
@@ -177,8 +187,9 @@ class Worker(QtCore.QThread):
                 self.camera.camera.show_frame(title, scale=self.scale)
             else:
                 cv2.destroyWindow(title)
-        except AttributeError:
-            print "Camera detached!"
+        except AttributeError as e:
+            print(e)
+            print "A camera was detached!"
             self.kill()
 
     def captureAll(self):
@@ -197,9 +208,15 @@ class Worker(QtCore.QThread):
 
     def captureImage(self):
         cameraSettings = self.camera
+        print("1")
+        #cameraSettings.reset(CAMERA_ACTIVATION_TIME_SECONDS)
+        print("2")
         frame = cameraSettings.camera.get_frame()
+        print("3")
         filename = self.getImageFilepath(self.imagesPath, cameraSettings.deviceNameStr)
+        print("4")
         cv2.imwrite(filename, frame)
+        print("5")
         return filename
 
     def getImageFilepath(self, path, deviceName):
@@ -241,6 +258,25 @@ class Worker(QtCore.QThread):
         for cam in self.cameras:
             cam.camera.close()
 
+class Application(QtGui.QApplication):
+    change_detected = QtCore.pyqtSignal()
+    def __init__(self, args):
+        super(Application, self).__init__(["Camera Workbench"])
+        
+        if args.use_amscope:
+            Camera = camera.AmscopeCamera
+            CameraManager = CameraSettings.AmscopeCameraSettings
+        else:
+            Camera = camera.WebCamera
+            CameraManager = CameraSettings.WebCameraSettings
+
+        cams = [CameraManager(Camera(device, fullRes=True), device, change_signal=self.change_detected) 
+                    for device in args.devices]
+        worker = Worker(cams)
+        worker.start()
+        mainWindow = MainWindow(worker, self.change_detected)
+        mainWindow.show()
+
 def main():
     parser = argparse.ArgumentParser(description="UI utility for time lapse and HDR imagery.")
     parser.add_argument("devices", type=int, nargs="+", help="Device index. (0, 1, 2, ...)")
@@ -248,20 +284,9 @@ def main():
     parser.add_argument('--webcam', dest='use_amscope', action='store_false')
     args = parser.parse_args()
 
-    app = QtGui.QApplication(['Camera Workbench'])
+    os.chdir(HOME_FOLDER)
+    app = Application(args)
 
-    if args.use_amscope:
-        Camera = camera.AmscopeCamera
-        CameraManager = CameraSettings.AmscopeCameraSettings
-    else:
-        Camera = camera.WebCamera
-        CameraManager = CameraSettings.WebCameraSettings
-
-    cams = [CameraManager(Camera(device, fullRes=True), device) for device in args.devices]
-    worker = Worker(cams)
-    worker.start()
-    mainWindow = MainWindow(worker)
-    mainWindow.show()
     app.exec_()
     time.sleep(2)
     app.quit()

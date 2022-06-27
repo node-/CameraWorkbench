@@ -7,6 +7,7 @@
 
 from PyQt4.QtGui import *
 import inspect
+from datetime import datetime
 
 
 def strtobool(astr):
@@ -75,6 +76,7 @@ def guidebug(self):
             settingsDebug.append((name, state))
 
     with open("settingsLog_" + str(self.deviceName.text()) + ".txt", "a") as f:
+        f.write(str(datetime.now()) + "\n")
         for key, value in settingsDebug:
             f.write("[" + str(key) + "] " + str(value) + "\n")
         f.write("\n")

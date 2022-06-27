@@ -63,6 +63,9 @@ class AbstractCamera(object):
     def set_rotation(self, value):
         self.rotation = value
 
+    def set_parameter(self, key, value):
+        raise NotImplementedError
+
     def rotate_bound(self, image, angle):
         # grab the dimensions of the image and then determine the
         # center
@@ -90,21 +93,32 @@ class AbstractCamera(object):
 
 class AmscopeCamera(AbstractCamera):
     """Camera class impl for the Amscope cameras, which have more camera settings than webcams."""
+    parameters = ["brightness", "contrast", "level_range", "exposure_time",
+                "exposure_gain", "temperature_tint", "hue", "saturation", "gamma"]
     def __init__(self, device, fullRes=False):
         self.rotation = 0
         self.device = device
         self.capture = None
+        self.disabled = False
         if not fullRes:
             self.resolution = 1
         else:
             self.resolution = 0
 
+    def get_serial(self):
+        return self.capture.get_serial() if not self.disabled else None
+
     def activate(self):
         #print "activating camera " + str(self.device)
         if self.capture:
             self.deactivate()
-        self.capture = self.open_cam(self.device)
-        self.capture.set_auto_exposure_enabled(False)
+        try:
+            self.capture = self.open_cam(self.device)
+            self.capture.set_auto_exposure_enabled(False)
+        except IOError as e:
+            print(e)
+            self.disabled = True
+            print("Camera is disabled at index: %s" % self.device)
 
     def deactivate(self):
         #print "deactivating camera " + str(self.device)
@@ -126,6 +140,16 @@ class AmscopeCamera(AbstractCamera):
         frame = self.rotate_bound(self.capture.get_np_image(), self.rotation)
         return frame
 
+    def set_parameter(self, key, value):
+        assert (key in self.parameters)
+        #if not self.disabled:
+        #getattr(self.capture, "set_" + key)(value)
+
+    def close(self):
+        self.deactivate()
+
+    
+    # Commented out since @deprecated decorator is not in this project
     def set_brightness(self, value):
         self.capture.set_brightness(value)
 
@@ -152,13 +176,15 @@ class AmscopeCamera(AbstractCamera):
 
     def set_gamma(self, value):
         self.capture.set_gamma(value)
-
-    def close(self):
-        self.deactivate()
+    
 
 
 class WebCamera(AbstractCamera):
     """Camera class impl for webcams that are supported by OpenCV3."""
+    parameters = {"brightness" : cv2.CAP_PROP_BRIGHTNESS,
+                    "contrast" : cv2.CAP_PROP_CONTRAST, 
+                    "exposure_gain" : cv2.CAP_PROP_GAIN, 
+                    "exposure_time" : cv2.CAP_PROP_EXPOSURE}
     def __init__(self, device, fullRes=True):
         self.rotation = 0
         self.device = device
@@ -178,6 +204,17 @@ class WebCamera(AbstractCamera):
         frame = self.rotate_bound(self.capture.read()[1], self.rotation)
         return frame
 
+    def set_parameter(self, key, value):
+        assert (key in self.parameters.keys())
+        self.capture.set(self.parameters[key], value)
+
+
+    def close(self):
+        self.capture.release()
+        cv2.destroyAllWindows()
+    
+    # Commented out since @deprecated decorator is not in this project
+
     def set_brightness(self, value):
         self.capture.set(cv2.CAP_PROP_BRIGHTNESS, value)
 
@@ -189,7 +226,4 @@ class WebCamera(AbstractCamera):
 
     def set_exposure(self, value):
         self.capture.set(cv2.CAP_PROP_EXPOSURE, value)
-
-    def close(self):
-        self.capture.release()
-        cv2.destroyAllWindows()
+    

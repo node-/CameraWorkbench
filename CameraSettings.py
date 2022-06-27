@@ -12,8 +12,14 @@ from camera import AmscopeCamera, WebCamera
 import time
 
 class AbstractCameraSettings(QtGui.QWidget):
-    def __init__(self, camera, device):
-        raise NotImplementedError
+    def __init__(self, camera, device, change_signal):
+        self.change_detected = change_signal
+        self.setWindowTitle("Camera Settings")
+        self.camera = camera
+        self.deviceId = device
+        self.settingsFuncs = [self.setBrightness, self.setContrast,
+                            self.setExposure, self.setRotation, self.setGain]
+        self.setFixedSize(self.size())
 
     def setDeviceName(self):
         deviceName = str(self.deviceName.text())
@@ -45,7 +51,11 @@ class AbstractCameraSettings(QtGui.QWidget):
 
     def changeValue(self, fromObj, toObj, setFunction):
         toObj.setValue(fromObj.value())
-        setFunction()
+        try:
+            setFunction()
+        except AttributeError as e:
+            # FIXME shouldn't give this error on boot if connectObjs() doesn't call setFunction()
+            print("Capture object is empty; normal if booting.")
 
     def setBrightness(self):
         self.camera.set_brightness(self.brightnessSpinBox.value())
@@ -69,34 +79,31 @@ class AbstractCameraSettings(QtGui.QWidget):
 
     def save(self):
         guisave(self)
+        self.change_detected.emit()
 
     def reset(self, waitTime):
         guirestore(self)
-        self.applySettings()
         self.wait(waitTime)
-
+        self.applySettings()
+        
     def closeEvent(self, event):
         guisave(self)
         event.accept()
 
 class WebCameraSettings(AbstractCameraSettings):
-    def __init__(self, camera, device):
+    def __init__(self, camera, device, change_signal):
         QtGui.QWidget.__init__(self)
+        AbstractCameraSettings.__init__(self, camera, device, change_signal)
         ui_path = "ui/parameters"
         self.ui = uic.loadUi(ui_path + '.ui', self)
-        self.setWindowTitle("Camera Settings")
-        self.camera = camera
-        self.deviceId = device
-        self.settingsFuncs = [self.setBrightness, self.setContrast,
-                            self.setExposure, self.setRotation, self.setGain]
-        self.setFixedSize(self.size())
 
         self.settings = QtCore.QSettings(
             ui_path + '_' +str(self.deviceId) + '.ini',
             QtCore.QSettings.IniFormat)
 
         self.setDeviceName()
-        self.wireUiElements()        
+        self.wireUiElements()
+        time.sleep(5)
         guirestore(self)
 
     def reset(self, waitTime):
@@ -119,17 +126,12 @@ class WebCameraSettings(AbstractCameraSettings):
         pass
 
 class AmscopeCameraSettings(AbstractCameraSettings):
-    def __init__(self, camera, device):
+    def __init__(self, camera, device, change_signal):
         QtGui.QWidget.__init__(self)
+        AbstractCameraSettings.__init__(self, camera, device, change_signal)
         ui_path = "ui/amscope_parameters"
         self.ui = uic.loadUi(ui_path + '.ui', self)
-        self.setWindowTitle("Camera Settings")
-        self.camera = camera
-        self.deviceId = device
         self.serial = self.initDeviceSerial()
-        self.settingsFuncs = [self.setBrightness, self.setContrast,
-                            self.setExposure, self.setRotation, self.setGain]
-        self.setFixedSize(self.size())
 
         self.settings = QtCore.QSettings(
             ui_path + '_' +str(self.serial) + '.ini',
@@ -141,7 +143,7 @@ class AmscopeCameraSettings(AbstractCameraSettings):
 
     def initDeviceSerial(self):
         self.camera.activate()
-        serial = str(self.camera.capture.get_serial())
+        serial = str(self.camera.get_serial())
         self.camera.deactivate()
         return serial
 
@@ -164,13 +166,13 @@ class AmscopeCameraSettings(AbstractCameraSettings):
         self.connectObjs((self.hueSlider, self.hueSpinBox), self.setHue)
 
     def setTempTint(self):
-        self.camera.set_temp_tint(self.tempSpinBox.value(), self.tintSpinBox.value())
+        self.camera.capture.set_temperature_tint(self.tempSpinBox.value(), self.tintSpinBox.value())
 
     def setHue(self):
-        self.camera.set_hue(self.hueSpinBox.value())
+        self.camera.set_parameter("hue", self.hueSpinBox.value())
 
     def setGamma(self):
-        self.camera.set_gamma(self.gammaSpinBox.value())
+        self.camera.set_parameter("gamma", self.gammaSpinBox.value())
 
     def setSaturation(self):
-        self.camera.set_saturation(self.saturationSpinBox.value())
+        self.camera.set_parameter("saturation", self.saturationSpinBox.value())
